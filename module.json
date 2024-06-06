@@ -1,0 +1,21 @@
+
+{
+  "id": "speaking-status",
+  "name": "speaking-status",
+  "title": "Speaking Status",
+  "description": "Indicates who's microphone is active'",
+  "authors": [{"name":"Xaukael"}],
+  "version": "1.0.0",
+  "socket": true,
+  "compatibility": {
+      "minimum": "10",
+      "verified": "11"
+    },
+  "scripts": ["speaking-status.js"],
+  "relationships": {
+  "requires": []
+  },
+  "url": "https://github.com/xaukael/speaking-status/",
+  "manifest": "https://github.com/xaukael/speaking-status/raw/main/module.json",
+  "download": "https://github.com/xaukael/speaking-status/raw/main/peaking-status.zip"
+}
