@@ -4,10 +4,10 @@ Hooks.once("socketlib.ready", () => {
   function speak(userId, speaking) {
     let user = game.users.get(userId);
     let tokens = user.character?.getActiveTokens();
+    Hooks.call('changeSpeakingStatus', user, speaking)
     if (speaking) {
       $(`#player-list > li[data-user-id="${user.id}"] span:first-child`).css({outline: '5px solid #3BA53B'});
       tokens.forEach(t => {
-        
         $('#hud').append($(`<div class="speaking-token-marker ${t.id}" style="position: absolute; top: ${t.y}px; left: ${t.x}px; width: ${t.w}px; height: ${t.h}px; outline: ${canvas.grid.size/20}px solid #3BA53B; border-radius: ${canvas.grid.size/20}px;"></div>`));
         $(`#token-action-bar li[data-token-id="${t.id}"]`).css({outline: '3px solid #3BA53B'});
       });
@@ -29,12 +29,10 @@ Hooks.on('ready',()=>{
   game.user.speaking = false;
   game.user.speakingThreshold = game.settings.get('speaking-status', 'threshold')
   navigator.mediaDevices.getUserMedia({audio:true, video:false}).then( function(stream){
-    // audioContext = new webkitAudioContext(); deprecated  OLD!!
     audioContext = new AudioContext(); // NEW!!
     analyser = audioContext.createAnalyser();
     microphone = audioContext.createMediaStreamSource(stream);
     processor = audioContext.createScriptProcessor(2048, 1, 1);
-    //processor = audioContext.AudioWorkletNode(2048, 1, 1);
     analyser.smoothingTimeConstant = 0.3;
     analyser.fftSize = 1024;
 
@@ -55,6 +53,7 @@ Hooks.on('ready',()=>{
         var average = values / length;
         //button.style.color = `rgba (0,${average},0,1)`
         let wasSpeaking = game.user.speaking
+        $('#speaking-level').css('width', `${average/50*100}%`)
         if (average > game.user.speakingThreshold) game.user.speaking = true;
         else game.user.speaking = false;
         //console.log(wasSpeaking, game.user.speaking)
@@ -89,3 +88,21 @@ Hooks.once("init", async () => {
   });
 });
 
+Hooks.on('renderSettingsConfig', (app, html, options)=>{
+  let input = html.find('input[name="speaking-status.threshold"]')
+  input.parent().next().prepend(`
+  <input type="range" min="0" max="50" value="0" class="slider" id="speaking-threshold">
+  `)
+
+  input.parent().next().prepend(`
+  <div style="background: grey; height: 20px; width: 100%">
+  <div id="speaking-level" style="background: white; height: 100%;"></div>
+  </div>
+  `)
+
+  html.find('#speaking-threshold').val(+input.val())
+  html.find('#speaking-threshold').change(function(){
+    input.val(this.value)
+    game.user.speakingThreshold = this.value;
+  })
+})
