@@ -28,41 +28,25 @@ Hooks.once("socketlib.ready", () => {
 Hooks.on('ready',()=>{
   game.user.speaking = false;
   game.user.speakingThreshold = game.settings.get('speaking-status', 'threshold')
-  navigator.mediaDevices.getUserMedia({audio:true, video:false}).then( function(stream){
-    audioContext = new AudioContext(); // NEW!!
-    analyser = audioContext.createAnalyser();
-    microphone = audioContext.createMediaStreamSource(stream);
-    processor = audioContext.createScriptProcessor(2048, 1, 1);
-    analyser.smoothingTimeConstant = 0.3;
-    analyser.fftSize = 1024;
-
-    microphone.connect(analyser);
-    analyser.connect(processor);
-    processor.connect(audioContext.destination);
-
-    processor.onaudioprocess = function() {
-        var array =  new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(array);
-        var values = 0;
-
-        var length = array.length;
-        for (var i = 0; i < length; i++) {
-            values += array[i];
-        }
-
-        var average = values / length;
-        //button.style.color = `rgba (0,${average},0,1)`
-        let wasSpeaking = game.user.speaking
-        $('#speaking-level').css('width', `${average/50*100}%`)
-        if (average > game.user.speakingThreshold) game.user.speaking = true;
-        else game.user.speaking = false;
-        //console.log(wasSpeaking, game.user.speaking)
-        if (wasSpeaking != game.user.speaking) speakingSocket.emit(game.user.id, game.user.speaking);
-        
-
-    }
-  });
+  startMicrophoneMonitor()
 });
+
+startMicrophoneMonitor = function() {
+  navigator.mediaDevices.getUserMedia({audio:true, video:false}).then( function(stream){
+    game.audio.startLevelReports("speaking-status", stream, (db)=>{
+      let wasSpeaking = game.user.speaking
+      $('#speaking-level').css('width', `${(db+140)/140*100}%`)
+      if (db > game.user.speakingThreshold) game.user.speaking = true;
+      else game.user.speaking = false;
+      if (wasSpeaking != game.user.speaking) speakingSocket.emit(game.user.id, game.user.speaking);
+    }, 50)
+  });
+}
+
+stopMicrophoneMonitor = function() {
+  speakingSocket.emit(game.user.id, false);
+  game.audio.stopLevelReports("speaking-status")
+} 
 
 cleanSpeakingMarkers = function () {
   $(`#player-list > li span:first-child`).css({outline: 'unset'});
@@ -78,11 +62,11 @@ Hooks.on('refreshToken', (t)=>{
 Hooks.once("init", async () => {
   game.settings.register('speaking-status', 'threshold', {
     name: `Speaking Threshold`,
-    hint: `Somewhere between 10 and 20 generally works best`,
+    hint: `In dB. Somewhere between -50 and -60 generally works best.`,
     scope: "client",
     config: true,
     type: Number,
-    default: 15,
+    default: -55,
     requiresReload: false,
     onChange: (value)=>{game.user.speakingThreshold = value}
   });
@@ -91,7 +75,7 @@ Hooks.once("init", async () => {
 Hooks.on('renderSettingsConfig', (app, html, options)=>{
   let input = html.find('input[name="speaking-status.threshold"]')
   input.parent().next().prepend(`
-  <input type="range" min="0" max="50" value="0" class="slider" id="speaking-threshold">
+  <input type="range" min="-120" max="0" value="0" class="slider" id="speaking-threshold">
   `)
 
   input.parent().next().prepend(`

@@ -5,7 +5,7 @@
   "title": "Speaking Status",
   "description": "Indicates who's microphone is active'",
   "authors": [{"name":"Xaukael"}],
-  "version": "1.1.0",
+  "version": "1.2.0",
   "socket": true,
   "compatibility": {
       "minimum": "10",
