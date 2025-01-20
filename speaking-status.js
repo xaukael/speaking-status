@@ -7,17 +7,19 @@ Hooks.once("socketlib.ready", () => {
     Hooks.call('changeSpeakingStatus', user, speaking)
     if (speaking) {
       $(`#player-list > li[data-user-id="${user.id}"] span:first-child`).css({outline: '5px solid #3BA53B'});
-      tokens.forEach(t => {
-        $('#hud').append($(`<div class="speaking-token-marker ${t.id}" style="position: absolute; top: ${t.y}px; left: ${t.x}px; width: ${t.w}px; height: ${t.h}px; outline: ${canvas.grid.size/20}px solid #3BA53B; border-radius: ${canvas.grid.size/20}px;"></div>`));
-        $(`#token-action-bar li[data-token-id="${t.id}"]`).css({outline: '3px solid #3BA53B'});
-      });
+      if (game.settings.get('speaking-status', 'token'))
+        tokens.forEach(t => {
+          $('#hud').append($(`<div class="speaking-token-marker ${t.id}" style="position: absolute; top: ${t.y}px; left: ${t.x}px; width: ${t.w}px; height: ${t.h}px; outline: ${(canvas.grid.size/20)}px solid #3BA53B; border-radius: ${game.settings.get('speaking-status', 'round')?(canvas.grid.size/2):canvas.grid.size/20}px;"></div>`));
+          $(`#token-action-bar li[data-token-id="${t.id}"]`).css({outline: '3px solid #3BA53B'});
+        });
     }
     if (!speaking) {
       $(`#player-list > li[data-user-id="${user.id}"] span:first-child`).css({outline: 'unset'});
-      tokens.forEach(t => { 
-        $('#hud').find(`div.speaking-token-marker.${t.id}`).remove(); 
-        $(`#token-action-bar li[data-token-id="${t.id}"]`).css({outline: 'unset'});
-      });
+      if (game.settings.get('speaking-status', 'token'))
+        tokens.forEach(t => { 
+          $('#hud').find(`div.speaking-token-marker.${t.id}`).remove(); 
+          $(`#token-action-bar li[data-token-id="${t.id}"]`).css({outline: 'unset'});
+        });
     }
   }
   speakingSocket = socketlib.registerModule("speaking-status");
@@ -69,6 +71,26 @@ Hooks.once("init", async () => {
     default: -55,
     requiresReload: false,
     onChange: (value)=>{game.user.speakingThreshold = value}
+  });
+  game.settings.register('speaking-status', 'token', {
+    name: `Show Token Indicator`,
+    hint: `Tokens for the speaking user's assigned actor will have border shown when speaking`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+    requiresReload: false,
+    onChange: (value)=>{}
+  });
+  game.settings.register('speaking-status', 'round', {
+    name: `Round Token Indicator`,
+    hint: `Border around token will be round if checked`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    requiresReload: false,
+    onChange: (value)=>{}
   });
 });
 
