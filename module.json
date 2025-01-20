@@ -3,7 +3,7 @@
   "id": "speaking-status",
   "name": "speaking-status",
   "title": "Speaking Status",
-  "description": "Indicates who's microphone is active'",
+  "description": "Indicates when a player is speaking using the microphone'",
   "authors": [{"name":"Xaukael"}],
   "version": "1.2.1",
   "socket": true,
