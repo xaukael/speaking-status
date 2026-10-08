@@ -5,17 +5,26 @@
   "title": "Speaking Status",
   "description": "Indicates when a player is speaking using the microphone'",
   "authors": [{"name":"Xaukael"}],
-  "version": "1.2.1",
+  "version": "1.3.0",
   "socket": true,
   "compatibility": {
       "minimum": "10",
-      "verified": "12"
+      "verified": "13"
     },
   "scripts": ["speaking-status.js"],
   "relationships": {
-  "requires": []
+  "requires": [
+    {
+      "id": "socketlib",
+      "type": "module",
+      "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json",
+      "compatibility": {
+        "minimum": "1.0.0"
+      }
+    }
+  ]
   },
-  "url": "https://github.com/xaukael/speaking-status/",
-  "manifest": "https://github.com/xaukael/speaking-status/raw/main/module.json",
-  "download": "https://github.com/xaukael/speaking-status/raw/main/speaking-status.zip"
+  "url": "https://github.com/esemwy/speaking-status-v13/",
+  "manifest": "https://github.com/esemwy/speaking-status-v13/releases/latest/download/module.json",
+  "download": "https://github.com/esemwy/speaking-status-v13/releases/latest/download/speaking-status.zip"
 }

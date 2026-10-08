@@ -1,24 +1,56 @@
 let speakingSocket
 
+function getPlayersRoot() {
+  const el = ui.players?.element;
+  if (!el) return null;
+  // Foundry v10-v12 Players (AppV1) exposes `.element` as jQuery; v13+ (AppV2) exposes a plain HTMLElement.
+  return el instanceof HTMLElement ? el : el[0];
+}
+
+function getPlayerRow(userId) {
+  return getPlayersRoot()?.querySelector(`[data-user-id="${userId}"]`) ?? null;
+}
+
+function getPlayerNameElement(userId) {
+  const row = getPlayerRow(userId);
+  if (!row) return null;
+  return row.querySelector('.player-name') ?? row;
+}
+
 Hooks.once("socketlib.ready", () => {
   function speak(userId, speaking) {
     let user = game.users.get(userId);
-    let tokens = user.character?.getActiveTokens();
+    let tokens = user.character?.getActiveTokens() ?? [];
     Hooks.call('changeSpeakingStatus', user, speaking)
+
+    let nameEl = getPlayerNameElement(user.id);
+    if (nameEl) nameEl.style.outline = speaking ? '5px solid #3BA53B' : 'unset';
+
     if (speaking) {
-      $(`#player-list > li[data-user-id="${user.id}"] span:first-child`).css({outline: '5px solid #3BA53B'});
       if (game.settings.get('speaking-status', 'token'))
         tokens.forEach(t => {
-          $('#hud').append($(`<div class="speaking-token-marker ${t.id}" style="position: absolute; top: ${t.y}px; left: ${t.x}px; width: ${t.w}px; height: ${t.h}px; outline: ${(canvas.grid.size/20)}px solid #3BA53B; border-radius: ${game.settings.get('speaking-status', 'round')?(canvas.grid.size/2):canvas.grid.size/20}px;"></div>`));
-          $(`#token-action-bar li[data-token-id="${t.id}"]`).css({outline: '3px solid #3BA53B'});
+          let marker = document.createElement('div');
+          marker.className = `speaking-token-marker ${t.id}`;
+          Object.assign(marker.style, {
+            position: 'absolute',
+            top: `${t.y}px`,
+            left: `${t.x}px`,
+            width: `${t.w}px`,
+            height: `${t.h}px`,
+            outline: `${canvas.grid.size / 20}px solid #3BA53B`,
+            borderRadius: `${game.settings.get('speaking-status', 'round') ? (canvas.grid.size / 2) : (canvas.grid.size / 20)}px`
+          });
+          document.getElementById('hud')?.appendChild(marker);
+          let actionBarEntry = document.querySelector(`#token-action-bar li[data-token-id="${t.id}"]`);
+          if (actionBarEntry) actionBarEntry.style.outline = '3px solid #3BA53B';
         });
     }
     if (!speaking) {
-      $(`#player-list > li[data-user-id="${user.id}"] span:first-child`).css({outline: 'unset'});
       if (game.settings.get('speaking-status', 'token'))
-        tokens.forEach(t => { 
-          $('#hud').find(`div.speaking-token-marker.${t.id}`).remove(); 
-          $(`#token-action-bar li[data-token-id="${t.id}"]`).css({outline: 'unset'});
+        tokens.forEach(t => {
+          document.querySelectorAll(`#hud div.speaking-token-marker.${t.id}`).forEach(el => el.remove());
+          let actionBarEntry = document.querySelector(`#token-action-bar li[data-token-id="${t.id}"]`);
+          if (actionBarEntry) actionBarEntry.style.outline = 'unset';
         });
     }
   }
@@ -37,7 +69,8 @@ startMicrophoneMonitor = function() {
   navigator.mediaDevices.getUserMedia({audio:true, video:false}).then( function(stream){
     game.audio.startLevelReports("speaking-status", stream, (db)=>{
       let wasSpeaking = game.user.speaking
-      $('#speaking-level').css('width', `${(db+140)/140*100}%`)
+      let levelBar = document.getElementById('speaking-level');
+      if (levelBar) levelBar.style.width = `${(db+140)/140*100}%`;
       if (db > game.user.speakingThreshold) game.user.speaking = true;
       else game.user.speaking = false;
       if (wasSpeaking != game.user.speaking) speakingSocket.emit(game.user.id, game.user.speaking);
@@ -48,17 +81,21 @@ startMicrophoneMonitor = function() {
 stopMicrophoneMonitor = function() {
   speakingSocket.emit(game.user.id, false);
   game.audio.stopLevelReports("speaking-status")
-} 
+}
 
 cleanSpeakingMarkers = function () {
-  $(`#player-list > li span:first-child`).css({outline: 'unset'});
-  $('#hud').find(`div.speaking-token-marker`).remove(); 
-  $(`#token-action-bar li`).css({outline: 'unset'});
+  getPlayersRoot()?.querySelectorAll('[data-user-id]').forEach(row => {
+    let nameEl = row.querySelector('.player-name') ?? row;
+    nameEl.style.outline = 'unset';
+  });
+  document.querySelectorAll('#hud div.speaking-token-marker').forEach(el => el.remove());
+  document.querySelectorAll('#token-action-bar li').forEach(el => el.style.outline = 'unset');
 }
 
 Hooks.on('refreshToken', (t)=>{
 	if (t.isPreview) return;
-  $(`#hud > div.speaking-token-marker.${t.id}`).css({ top: `${t.y}px`, left: `${t.x}px`});
+  let marker = document.querySelector(`#hud > div.speaking-token-marker.${t.id}`);
+  if (marker) Object.assign(marker.style, { top: `${t.y}px`, left: `${t.x}px` });
 });
 
 Hooks.once("init", async () => {
@@ -95,20 +132,24 @@ Hooks.once("init", async () => {
 });
 
 Hooks.on('renderSettingsConfig', (app, html, options)=>{
-  let input = html.find('input[name="speaking-status.threshold"]')
-  input.parent().next().prepend(`
-  <input type="range" min="-120" max="0" value="0" class="slider" id="speaking-threshold">
-  `)
+  // v13 (ApplicationV2) passes a plain HTMLElement here; v10-v12 (AppV1) pass a jQuery object.
+  let root = html instanceof HTMLElement ? html : html[0];
+  let input = root.querySelector('input[name="speaking-status.threshold"]');
+  if (!input) return;
+  let hint = input.closest('.form-group')?.querySelector('.hint');
+  if (!hint) return;
 
-  input.parent().next().prepend(`
+  hint.insertAdjacentHTML('afterbegin', `
   <div style="background: grey; height: 20px; width: 100%">
   <div id="speaking-level" style="background: white; height: 100%;"></div>
   </div>
+  <input type="range" min="-120" max="0" value="0" class="slider" id="speaking-threshold">
   `)
 
-  html.find('#speaking-threshold').val(+input.val())
-  html.find('#speaking-threshold').change(function(){
-    input.val(this.value)
+  let slider = hint.querySelector('#speaking-threshold');
+  slider.value = +input.value;
+  slider.addEventListener('change', function(){
+    input.value = this.value;
     game.user.speakingThreshold = this.value;
   })
 })
