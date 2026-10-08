@@ -3,28 +3,26 @@
   "id": "speaking-status",
   "name": "speaking-status",
   "title": "Speaking Status",
-  "description": "Indicates when a player is speaking using the microphone'",
+  "description": "Indicates who's microphone is active'",
   "authors": [{"name":"Xaukael"}],
-  "version": "1.3.0",
+  "version": "1.2.2",
   "socket": true,
   "compatibility": {
       "minimum": "10",
-      "verified": "13"
+      "verified": "14"
     },
   "scripts": ["speaking-status.js"],
   "relationships": {
-  "requires": [
-    {
-      "id": "socketlib",
-      "type": "module",
-      "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json",
+  "requires": [{
+   "id": "socketlib",
+   "type": "module",
+   "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json"
       "compatibility": {
         "minimum": "1.0.0"
       }
-    }
-  ]
+			}]
   },
-  "url": "https://github.com/esemwy/speaking-status-v13/",
-  "manifest": "https://github.com/esemwy/speaking-status-v13/releases/latest/download/module.json",
-  "download": "https://github.com/esemwy/speaking-status-v13/releases/latest/download/speaking-status.zip"
+  "url": "https://github.com/xaukael/speaking-status/",
+  "manifest": "https://github.com/xaukael/speaking-status/raw/main/module.json",
+  "download": "https://github.com/xaukael/speaking-status/raw/main/peaking-status.zip"
 }
